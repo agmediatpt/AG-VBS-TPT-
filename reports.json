@@ -1,0 +1,22 @@
+[
+  {
+    "id": "1776127001537",
+    "savedAt": "2026-04-14T00:36:41.537Z",
+    "registrations": [
+      {
+        "areaName": "Test Area",
+        "memberCount": "10",
+        "inchargePerson": "Test Person"
+      }
+    ],
+    "teacherAttendance": [],
+    "studentAttendance": [],
+    "expenses": [],
+    "summary": {
+      "totalRegistrations": 1,
+      "totalTeachers": 0,
+      "totalStudents": 0,
+      "totalExpenses": 0
+    }
+  }
+]

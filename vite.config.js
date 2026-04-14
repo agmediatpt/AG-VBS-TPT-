@@ -9,5 +9,11 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5000'
     }
+  },
+  css: {
+    devSourcemap: true
+  },
+  build: {
+    cssMinify: false
   }
 })

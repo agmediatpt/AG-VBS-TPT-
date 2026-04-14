@@ -1,21 +1,7 @@
 [
   {
-    "childrensName": "david",
-    "age": "13",
-    "fromPlace": "goled",
-    "classWish": "junior",
-    "registrationType": "Full Event",
-    "phoneNumber": "8903399203",
-    "id": "1775843540036",
-    "dateSubmitted": "4/10/2026"
-  },
-  {
-    "childrensName": "Jeba ",
-    "age": "10",
-    "fromPlace": "Mullai nagar ",
-    "classWish": "Beginer",
-    "registrationType": "Full Event",
-    "id": "1775843575960",
-    "dateSubmitted": "10/04/2026"
+    "areaName": "Test Area",
+    "memberCount": "10",
+    "inchargePerson": "Test Person"
   }
 ]
