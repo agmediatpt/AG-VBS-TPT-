@@ -19,9 +19,53 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/vbs2026')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+const connectDB = async () => {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vbs2026', opts).then((mongooseInstance) => {
+      console.log('Connected to MongoDB');
+      return mongooseInstance;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    await initializeData();
+  } catch (e) {
+    cached.promise = null;
+    console.error('MongoDB connection error:', e);
+    throw e;
+  }
+
+  return cached.conn;
+};
+
+// Middleware to ensure DB connection before handling API routes
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    try {
+      await connectDB();
+    } catch (err) {
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+  }
+  next();
+});
 
 // Define schemas
 const registrationSchema = new mongoose.Schema({
@@ -354,15 +398,16 @@ app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start server after MongoDB connection (for local development)
-mongoose.connection.once('open', async () => {
-  await initializeData();
-  if (process.env.NODE_ENV !== 'production') {
+// Start server for local development
+if (process.env.NODE_ENV !== 'production') {
+  connectDB().then(() => {
     app.listen(PORT, () => {
       console.log(`Backend server running at port ${PORT}`);
     });
-  }
-});
+  }).catch(err => {
+    console.error('Failed to start server:', err);
+  });
+}
 
 // Export the Express app for Vercel serverless functions
 export default app;
