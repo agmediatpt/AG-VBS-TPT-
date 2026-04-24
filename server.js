@@ -22,6 +22,7 @@ app.use(express.json());
 
 // Connect to MongoDB
 let cached = global.mongoose;
+let dataInitialized = false;
 
 if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
@@ -29,28 +30,45 @@ if (!cached) {
 
 const connectDB = async () => {
   if (cached.conn) {
+    if (!dataInitialized) {
+      await initializeData();
+      dataInitialized = true;
+    }
     return cached.conn;
   }
 
   if (!cached.promise) {
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vbs2026';
+    console.log('Attempting to connect to MongoDB:', mongoUri.replace(/\/\/.*@/, '//***:***@'));
+    
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 10,
     };
 
-    cached.promise = mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vbs2026', opts).then((mongooseInstance) => {
-      console.log('Connected to MongoDB');
-      return mongooseInstance;
-    });
+    cached.promise = mongoose.connect(mongoUri, opts)
+      .then((mongooseInstance) => {
+        console.log('Connected to MongoDB successfully');
+        return mongooseInstance;
+      })
+      .catch((err) => {
+        console.error('MongoDB connection failed:', err.message);
+        cached.promise = null;
+        throw err;
+      });
   }
 
   try {
     cached.conn = await cached.promise;
-    await initializeData();
+    if (!dataInitialized) {
+      await initializeData();
+      dataInitialized = true;
+    }
   } catch (e) {
     cached.promise = null;
-    console.error('MongoDB connection error:', e);
+    console.error('MongoDB connection error:', e.message);
     throw e;
   }
 
@@ -63,7 +81,8 @@ app.use(async (req, res, next) => {
     try {
       await connectDB();
     } catch (err) {
-      return res.status(500).json({ error: 'Database connection failed' });
+      console.error('API request failed - DB connection error:', err.message);
+      return res.status(500).json({ error: 'Database connection failed: ' + err.message });
     }
   }
   next();
