@@ -14,6 +14,17 @@ export default defineConfig({
     devSourcemap: true
   },
   build: {
-    cssMinify: false
+    cssMinify: true,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'lucide': ['lucide-react']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false
   }
 })
