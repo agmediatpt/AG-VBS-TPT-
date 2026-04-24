@@ -14,13 +14,20 @@ export default defineConfig({
     devSourcemap: true
   },
   build: {
-    cssMinify: true,
+    cssMinify: false,
     minify: 'terser',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'lucide': ['lucide-react']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('lucide-react')) {
+              return 'lucide';
+            }
+            return 'vendor';
+          }
         }
       }
     },

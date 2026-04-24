@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
-/* global process */
+/* global process, global */
 
 dotenv.config();
 
