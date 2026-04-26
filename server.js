@@ -4,6 +4,7 @@ import compression from 'compression';
 import path from 'path';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import multer from 'multer';
 import { fileURLToPath } from 'url';
 
 /* global process, global */
@@ -12,6 +13,32 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads');
+    // Create uploads directory if it doesn't exist
+    require('fs').mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+});
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -112,21 +139,21 @@ const studentSchema = new mongoose.Schema({
   studentName: String,
   teacherName: String,
   addedBy: String,
-  attendance: {
-    "27": { type: Boolean, default: false },
-    "28": { type: Boolean, default: false },
-    "29": { type: Boolean, default: false },
-    "30": { type: Boolean, default: false }
-  }
+  attefaithClassBookSchema = new mongoose.Schema({
+  className: String,
+  fileName: String,
+  filePath: String,
+  uploadedAt: { type: Date, default: Date.now }
 });
 
-const expenseSchema = new mongoose.Schema({
-  id: String,
-  billName: String,
-  purchasedBy: String,
-  amount: String,
-  date: { type: Date, default: Date.now }
-});
+// Create models
+const Registration = mongoose.model('Registration', registrationSchema);
+const Teacher = mongoose.model('Teacher', teacherSchema);
+const Student = mongoose.model('Student', studentSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
+const Report = mongoose.model('Report', reportSchema);
+const Admin = mongoose.model('Admin', adminSchema);
+const FaithClassBook = mongoose.model('FaithClassBook', faithClassBook
 
 const reportSchema = new mongoose.Schema({
   id: String,
@@ -366,14 +393,71 @@ app.delete('/api/expenses/:id', async (req, res) => {
   } catch (err) {
     console.error('Error deleting expense:', err);
     res.status(500).json({ error: 'Failed to delete expense' });
+  }Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Get all faith class books
+app.get('/api/faith-class-books', async (req, res) => {
+  try {
+    const books = await FaithClassBook.find();
+    res.json(books);
+  } catch (err) {
+    console.error('Error fetching faith class books:', err);
+    res.status(500).json({ error: 'Failed to fetch faith class books' });
   }
 });
 
-// Get admin settings
-app.get('/api/admin', async (req, res) => {
+// Upload faith class book PDF
+app.post('/api/faith-class-books/upload', upload.single('pdf'), async (req, res) => {
   try {
-    const admin = await Admin.findOne() || {};
-    res.json(admin);
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { className } = req.body;
+    if (!className) {
+      return res.status(400).json({ error: 'Class name is required' });
+    }
+
+    // Remove existing file for this class
+    await FaithClassBook.deleteMany({ className });
+
+    const newBook = new FaithClassBook({
+      className,
+      fileName: req.file.originalname,
+      filePath: req.file.filename
+    });
+
+    const savedBook = await newBook.save();
+    res.status(201).json({ message: 'File uploaded successfully', book: savedBook });
+  } catch (err) {
+    console.error('Error uploading file:', err);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
+// Delete faith class book
+app.delete('/api/faith-class-books/:className', async (req, res) => {
+  try {
+    const { className } = req.params;
+    const book = await FaithClassBook.findOne({ className });
+    
+    if (book) {
+      // Delete file from filesystem
+      const fs = require('fs');
+      const filePath = path.join(__dirname, 'uploads', book.filePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      // Delete from database
+      await FaithClassBook.deleteOne({ className });
+    }
+    
+    res.status(200).json({ message: 'Faith class book deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting faith class book:', err);
+    res.status(500).json({ error: 'Failed to delete faith class book
   } catch (err) {
     console.error('Error fetching admin settings:', err);
     res.status(500).json({ error: 'Failed to read admin data' });

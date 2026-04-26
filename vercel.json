@@ -31,8 +31,8 @@
       "dest": "/dist/assets/$1"
     },
     {
-      "src": "/favicon.svg",
-      "dest": "/dist/favicon.svg"
+      "src": "/uploads/(.*)",
+      "dest": "/uploads/$1"
     },
     {
       "src": "/hero.png",
