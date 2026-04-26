@@ -38,7 +38,7 @@ const connectDB = async () => {
   }
 
   if (!cached.promise) {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vbs2026';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/vbs2026';
     console.log('Attempting to connect to MongoDB:', mongoUri.replace(/\/\/.*@/, '//***:***@'));
     
     const opts = {
