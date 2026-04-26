@@ -288,12 +288,21 @@ app.get('/api/student-attendance', async (req, res) => {
 // Update student attendance data
 app.post('/api/student-attendance', async (req, res) => {
   try {
-    const updatedStudents = req.body;
+    const updatedStudents = Array.isArray(req.body) ? req.body : [req.body];
     
     for (const updated of updatedStudents) {
+      const { _id, __v, ...studentData } = updated;
+      const sanitizedData = {
+        id: studentData.id,
+        studentName: studentData.studentName,
+        teacherName: studentData.teacherName,
+        addedBy: studentData.addedBy,
+        attendance: studentData.attendance || { "27": false, "28": false, "29": false, "30": false }
+      };
+
       await Student.findOneAndUpdate(
-        { id: updated.id },
-        updated,
+        { id: sanitizedData.id },
+        sanitizedData,
         { upsert: true, new: true }
       );
     }
